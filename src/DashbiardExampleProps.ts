@@ -93,8 +93,10 @@ interface MatrixDisplayProps {
   refreshInterval?: number;
   customStyles?: React.CSSProperties;
   filters?: FilterConfig[];
+  inVisibleFilters?: FilterConfig[];
   appliedFilters?: AppliedFilter[];
   onFiltersChange?: (filters: AppliedFilter[]) => void;
+  sampleData?: MatrixData;
 }
 
 interface ClickData {

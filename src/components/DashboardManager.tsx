@@ -1,5 +1,9 @@
 import { Download, Upload, RotateCcw } from "lucide-react";
 import { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState } from "../redux/store";
+import { setCurrentDashboard, addDashboard } from "../redux/dashboardSlice";
+import { dashboardStorage } from "../utils/dashboardStorage";
 import type { DashboardLayout } from "../DashbiardExampleProps";
 
 const DashboardManager: React.FC<{
@@ -10,15 +14,19 @@ const DashboardManager: React.FC<{
   currentNavigationPath: string;
   onClearLayout: () => void;
 }> = ({
-  dashboards,
   currentDashboard,
-  onDashboardChange,
   onLoadDashboard,
   currentNavigationPath,
   onClearLayout,
 }) => {
+  const dispatch = useDispatch();
+  const { dashboards: storedDashboards, currentDashboardId } = useSelector(
+    (state: RootState) => state.dashboard
+  );
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [configText, setConfigText] = useState("");
+  const [isAddDashboardModalOpen, setIsAddDashboardModalOpen] = useState(false);
+  const [newDashboardName, setNewDashboardName] = useState("");
 
   const exportConfig = () => {
     const config = JSON.stringify(currentDashboard, null, 2);
@@ -48,28 +56,48 @@ const DashboardManager: React.FC<{
     URL.revokeObjectURL(url);
   };
 
+  const handleDashboardChange = async (dashboardId: string) => {
+    if (dashboardId === "add-new") {
+      setIsAddDashboardModalOpen(true);
+      return;
+    }
+    dispatch(setCurrentDashboard(dashboardId));
+  };
+
+  const handleAddDashboard = async () => {
+    if (!newDashboardName.trim()) {
+      alert("Please enter a dashboard name");
+      return;
+    }
+
+    try {
+      const newDashboard = await dashboardStorage.createDashboard(newDashboardName.trim());
+      dispatch(addDashboard(newDashboard));
+      dispatch(setCurrentDashboard(newDashboard.id));
+      setIsAddDashboardModalOpen(false);
+      setNewDashboardName("");
+    } catch (error) {
+      alert("Error creating dashboard");
+      console.error(error);
+    }
+  };
+
   return (
     <>
       <div className="flex gap-2 ">
-        {/* <select
-          value={currentDashboard.id}
-          onChange={(e) => {
-            const dashboard = dashboards.find((d) => d.id === e.target.value);
-            if (dashboard) onDashboardChange(dashboard);
-          }}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <select
+          value={currentDashboardId || ""}
+          onChange={(e) => handleDashboardChange(e.target.value)}
+          className="bg-transparent text-sm font-medium text-gray-700 focus:outline-none bg-white border border-gray-200 rounded-lg p-2"
         >
-          {dashboards.map((dashboard) => (
+          {storedDashboards.map((dashboard) => (
             <option key={dashboard.id} value={dashboard.id}>
               {dashboard.name}
             </option>
           ))}
-        </select> */}
-        {/* <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-sm"> */}
-        <select className="bg-transparent text-sm font-medium text-gray-700 focus:outline-none bg-white border border-gray-200 rounded-lg p-2 ">
-          <option>My Dashboard</option>
-          <option>Analytics Dashboard</option>
-          <option>Sales Dashboard</option>
+          <option value="add-new" className="font-semibold text-blue-600">
+            + Add New Dashboard
+          </option>
         </select>
         <button
           onClick={exportConfig}
@@ -148,6 +176,43 @@ const DashboardManager: React.FC<{
                   Import
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAddDashboardModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[400px]">
+            <h3 className="text-lg font-semibold mb-4">Create New Dashboard</h3>
+            <input
+              type="text"
+              value={newDashboardName}
+              onChange={(e) => setNewDashboardName(e.target.value)}
+              placeholder="Enter dashboard name"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleAddDashboard();
+                }
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsAddDashboardModalOpen(false);
+                  setNewDashboardName("");
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddDashboard}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Create
+              </button>
             </div>
           </div>
         </div>

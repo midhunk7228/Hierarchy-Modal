@@ -33,7 +33,7 @@ import type {
 import FilterPanel from "./FilterPanel";
 import { useDispatch, useSelector } from "react-redux";
 import { setLocalAppliedFilters } from "../redux/filtersSlice";
-import { RootState } from "../redux/store";
+import type { RootState } from "../redux/store";
 
 // amCharts 5 imports
 import * as am5 from "@amcharts/amcharts5";
